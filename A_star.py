@@ -8,7 +8,7 @@
 # Your function should return the expanded grid
 # which shows, for each element, the count when
 # it was expanded or -1 if the element was never expanded.
-# 
+#
 # If there is no path from init to goal,
 # the function should return the string 'fail'
 # ----------
@@ -19,77 +19,102 @@ grid = [[0, 1, 0, 0, 0, 0],
         [0, 1, 0, 0, 0, 0],
         [0, 0, 0, 0, 1, 0]]
 
-heuristic = [[9, 8, 7, 6, 5, 4],
-             [8, 7, 6, 5, 4, 3],
-             [7, 6, 5, 4, 3, 2],
-             [6, 5, 4, 3, 2, 1],
-             [5, 4, 3, 2, 1, 0]]
+heuristic = ((9, 8, 7, 6, 5, 4),
+             (8, 7, 6, 5, 4, 3),
+             (7, 6, 5, 4, 3, 2),
+             (6, 5, 4, 3, 2, 1),
+             (5, 4, 3, 2, 1, 0))
 
-init = [0, 0]
-goal = [len(grid)-1, len(grid[0])-1]
+init = (0, 0)
+goal = (len(grid[0])-1, len(grid)-1)
+
+# cost must not be 0 because now it affects more than p_queue sorting
 cost = 1
 
-delta = [[-1, 0 ], # go up
-         [ 0, -1], # go left
-         [ 1, 0 ], # go down
-         [ 0, 1 ]] # go right
+delta = ((0, -1), # go up
+         (-1, 0), # go left
+         (0, 1), # go down
+         (1, 0)) # go right
 
-delta_name = ['^', '<', 'v', '>']
+def get_neighbors(x, y):
+    return tuple(map(lambda i: (x+i[0], y+i[1]), delta))
 
-def search(grid,init,goal,cost,heuristic):
+def search(grid, init, goal, cost, heuristic):
     # ----------------------------------------
     # modify the code below
     # ----------------------------------------
-    closed = [[0 for col in range(len(grid[0]))] for row in range(len(grid))]
-    closed[init[0]][init[1]] = 1
-
     expand = [[-1 for col in range(len(grid[0]))] for row in range(len(grid))]
-    action = [[-1 for col in range(len(grid[0]))] for row in range(len(grid))]
+    prev = [[[] for col in range(len(grid[0]))] for row in range(len(grid))]
 
     x = init[0]
     y = init[1]
     g = 0
-    f = g + heuristic[x][y]
+    f = g + heuristic[y][x]
 
-    open = [[f, g, x, y]]
+    p_queue = [(f, g, x, y)]
+    path = []
+    log = []
 
-    found = False  # flag that is set when search is complete
-    resign = False # flag set if we can't find expand
-    count = 0
-    
-    while not found and not resign:
-        if len(open) == 0:
-            resign = True
-            return "Fail"
-        else:
-            open.sort()
-            open.reverse()
-            next = open.pop()
-            f = next[0]
-            g = next[1]
-            x = next[2]
-            y = next[3]
-            
-            expand[x][y] = count
-            count += 1
-            
-            if x == goal[0] and y == goal[1]:
-                found = True
-            else:
-                for i in range(len(delta)):
-                    x2 = x + delta[i][0]
-                    y2 = y + delta[i][1]
-                    if x2 >= 0 and x2 < len(grid) and y2 >=0 and y2 < len(grid[0]):
-                        if closed[x2][y2] == 0 and grid[x2][y2] == 0:
-                            g2 = g + cost
-                            f = g2 + heuristic[x2][y2]
-                            open.append([f, g2, x2, y2])
-                            closed[x2][y2] = 1
-                            
+    while p_queue:
+        p_queue.sort()
+        f, g, x, y = p_queue.pop(0)
+        grid[y][x] = 1 # closed
+
+        if x == goal[0] and y == goal[1]:
+            path = [(x, y)]
+            break
+
+        neighbors = get_neighbors(x, y)
+
+        for i in neighbors:
+            xi, yi = i
+
+            if yi < 0 or yi >= len(grid) or xi < 0 or xi >= len(grid[0]):
+                continue
+
+            gi = g + cost
+
+            f = gi + heuristic[yi][xi] # a star
+            # f = heuristic[yi][xi] # best first?
+            # f = gi # ucs
+
+            if not grid[yi][xi]:
+                p_queue.append((f, gi, xi, yi))
+
+            p = prev[yi][xi]
+
+            if (not p or gi < p[1]):
+            # if (not p or gi <= p[1]):
+                if (p and p[0] != (x, y)):
+                    log.append("({}, {}): {} => {}".format(xi, yi, p, np))
+                np = [(x, y), gi]
+                p[:] = np
+
+
+    if not path:
+        print("Fail")
+        return path
+
+    if log:
+        for i in log:
+            print(i)
+        print()
+
+    while path[-1] != (0, 0):
+        x, y = path[-1]
+        p = prev[y][x][0]
+        if p in path:
+            print("Loop! {} in in {}".format(p, path))
+            return []
+        path.append(p)
+
+    while path:
+        x, y = path.pop(0)
+        expand[y][x] = len(path)
+
     return expand
 
-result = search(grid,init,goal,cost,heuristic)
+result = search(grid, init, goal, cost, heuristic)
 
 for el in result:
-	print (el)
-
+    print("  ".join([*map(lambda x: "%2s" %x, el)]))
