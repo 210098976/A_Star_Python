@@ -36,6 +36,9 @@ delta = [[-1, 0 ], # go up
 
 delta_name = ['^', '<', 'v', '>']
 
+def get_neighbors(x, y):
+    return tuple(map(lambda i: (x+i[0], y+i[1]), delta))
+
 def search(grid,init,goal,cost,heuristic):
     # ----------------------------------------
     # modify the code below
@@ -55,7 +58,7 @@ def search(grid,init,goal,cost,heuristic):
 
     found = False  # flag that is set when search is complete
     resign = False # flag set if we can't find expand
-    count = 0
+    count = []
     
     while not found and not resign:
         if len(open) == 0:
@@ -70,8 +73,11 @@ def search(grid,init,goal,cost,heuristic):
             x = next[2]
             y = next[3]
             
-            expand[x][y] = count
-            count += 1
+            if count and count[0] not in get_neighbors(x, y):
+                continue
+
+            expand[x][y] = len(count)
+            count.insert(0, (x, y))
             
             if x == goal[0] and y == goal[1]:
                 found = True
@@ -91,5 +97,5 @@ def search(grid,init,goal,cost,heuristic):
 result = search(grid,init,goal,cost,heuristic)
 
 for el in result:
-	print (el)
+	print("  ".join([*map(lambda x: "%2s" %x, el)]))
 
